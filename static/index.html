@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard Kamar Mandi Sekolah</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            background: #f0f2f5;
+            color: #333;
+        }
+        header {
+            background: #1e3a8a;
+            color: white;
+            padding: 20px;
+            text-align: center;
+        }
+        h1 {
+            margin: 0;
+        }
+        .container {
+            max-width: 900px;
+            margin: 20px auto;
+            padding: 0 20px;
+        }
+        .card {
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        .status {
+            font-size: 24px;
+            font-weight: bold;
+            padding: 10px;
+            border-radius: 8px;
+            display: inline-block;
+        }
+        .status.aman {
+            background-color: #10b981;
+            color: white;
+        }
+        .status.bahaya {
+            background-color: #ef4444;
+            color: white;
+        }
+        button {
+            background-color: #1e3a8a;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 5px;
+        }
+        button:hover {
+            background-color: #3741a0;
+        }
+        .sensor-value {
+            font-size: 48px;
+            text-align: center;
+            margin: 10px 0;
+        }
+        label {
+            font-weight: bold;
+        }
+        input[type="number"] {
+            padding: 8px;
+            font-size: 16px;
+            border-radius: 8px;
+            border: 1px solid #ccc;
+            width: 100px;
+        }
+        .control {
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>Dashboard Kamar Mandi Sekolah</h1>
+    </header>
+    <div class="container">
+        <div class="card">
+            <h2>Status Kualitas Udara</h2>
+            <div class="sensor-value" id="sensorValue">0</div>
+            <div>Status: <span id="sensorStatus" class="status aman">BAIK</span></div>
+        </div>
+
+        <div class="card">
+            <h2>Pengaturan Ambang Sensor</h2>
+            <div class="control">
+                <label for="thresholdInput">Ambang (Threshold):</label>
+                <input type="number" id="thresholdInput">
+                <button onclick="updateThreshold()">Update</button>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2>Kontrol Alarm</h2>
+            <div class="control">
+                <button onclick="controlBuzzer('on')">Nyalakan Alarm</button>
+                <button onclick="controlBuzzer('off')">Matikan Alarm</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        async function fetchSensor() {
+            try {
+                const res = await fetch('/api/sensor');
+                const data = await res.json();
+                document.getElementById('sensorValue').innerText = data.value;
+                const statusEl = document.getElementById('sensorStatus');
+                statusEl.innerText = data.status === "AMAN" ? "BAIK" : "BURUK";
+                if(data.status === "AMAN") {
+                    statusEl.className = 'status aman';
+                } else {
+                    statusEl.className = 'status bahaya';
+                }
+                document.getElementById('thresholdInput').value = data.threshold;
+            } catch(err) {
+                console.error("Error fetching sensor:", err);
+            }
+        }
+
+        async function updateThreshold() {
+            const thr = parseInt(document.getElementById('thresholdInput').value);
+            try {
+                const res = await fetch('/api/threshold', {
+                    method: 'POST',
+                    body: JSON.stringify({threshold: thr})
+                });
+                const data = await res.json();
+                alert(data.message);
+            } catch(err) {
+                console.error("Error updating threshold:", err);
+            }
+        }
+
+        async function controlBuzzer(action) {
+            try {
+                const res = await fetch('/api/buzzer', {
+                    method: 'POST',
+                    body: JSON.stringify({action: action})
+                });
+                const data = await res.json();
+                alert("Alarm " + (action === "on" ? "dinyalakan" : "dimatikan"));
+            } catch(err) {
+                console.error("Error controlling buzzer:", err);
+            }
+        }
+
+        setInterval(fetchSensor, 1000);
+        fetchSensor();
+    </script>
+</body>
+</html>
